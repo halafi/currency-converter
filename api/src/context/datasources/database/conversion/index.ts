@@ -13,7 +13,6 @@ export const getStats = async (): Promise<Stats> =>
       .select({
         targetCurrency: 'targetCurrency',
         amountInUsd: 'amountInUsd',
-        createdAt: 'createdAt', // TODO: might be not be needed
       })
       .orderBy('createdAt', 'desc') // TODO: check if correct
       .limit(1000)

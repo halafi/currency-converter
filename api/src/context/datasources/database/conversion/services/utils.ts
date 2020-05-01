@@ -11,7 +11,6 @@ type CurrencyMap = {
 type Record = {
   targetCurrency: string;
   amountInUsd: number;
-  createdAt: string;
 };
 
 // eslint-disable-next-line import/prefer-default-export

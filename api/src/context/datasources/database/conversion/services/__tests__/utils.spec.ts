@@ -1,7 +1,6 @@
 import { getMostPopularTargetCurrency } from '../utils';
 
 const common = {
-  createdAt: '',
   amountInUsd: 1,
 };
 describe('#utils', () => {
