@@ -46,17 +46,28 @@ export const newConversion = async (baseCur: string, targetCur: string, amount: 
   const { rates } = await getRates(baseCur.toLowerCase());
   const rate = rates && rates[targetCur.toUpperCase()];
   if (!rate) {
-    console.error(
-      `[server] unsupported currency ${baseCur.toUpperCase()} -> ${targetCur.toUpperCase()}`,
-    );
+    console.error(`[server] unsupported currency ${baseCur} -> ${targetCur}`);
     return {
       rate: 0,
       result: 0,
     };
   }
   const inTargetCurrency = amount * rate;
+  const toUsdRate = rates.USD || 1; // fallback in case base currency is USD
+  const inUsd = baseCur.toLowerCase() === 'usd' ? amount : amount * toUsdRate;
   // store conversion in DB
-  // TODO
+  await database(TABLE_NAME)
+    .insert({
+      baseCurrency: baseCur,
+      targetCurrency: targetCur,
+      amountInBase: amount,
+      amountInTarget: inTargetCurrency,
+      amountInUsd: inUsd,
+      conversionRate: rate,
+    })
+    .catch((err) => {
+      console.error(`[server] ${err}`);
+    });
   return {
     rate,
     result: inTargetCurrency,

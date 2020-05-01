@@ -12,8 +12,8 @@ export const getCurrencies = (): Promise<string[]> =>
     });
 
 export const getRates = (baseCur: string) => {
-  const cur = baseCur.toLowerCase();
-  return fetch(`${API_URL}${cur !== 'eur' ? `?base=${cur}` : ''}`)
+  const cur = baseCur.toUpperCase(); // must be
+  return fetch(`${API_URL}${cur !== 'EUR' ? `?base=${cur}` : ''}`)
     .then((res) => res.json())
     .catch((err) => {
       console.error(`[server] ${err}`);
