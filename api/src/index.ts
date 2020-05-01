@@ -9,8 +9,6 @@ import context from './context';
 const app = express();
 const port = process.env.PORT || 8000;
 
-console.log('fap');
-
 app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));
