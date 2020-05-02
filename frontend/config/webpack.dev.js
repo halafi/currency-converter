@@ -1,5 +1,4 @@
 const webpack = require('webpack');
-const Assets = require('assets-webpack-plugin');
 const path = require('path');
 
 module.exports = (env, argv) => ({
@@ -35,13 +34,7 @@ module.exports = (env, argv) => ({
     historyApiFallback: true,
   },
   plugins: [
-    new Assets({
-      path: 'dist',
-      filename: 'assets.json',
-      prettyPrint: true,
-    }),
     new webpack.DefinePlugin({
-      __DEV__: true,
       'process.env': {
         NODE_ENV: JSON.stringify(argv.mode),
       },

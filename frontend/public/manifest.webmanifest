@@ -1,6 +1,6 @@
 {
-  "short_name":"app",
-  "name":"react-app",
+  "short_name":"currconv",
+  "name":"currconverter",
   "icons":[
     {
       "src": "favicon.ico",

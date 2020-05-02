@@ -1,5 +1,4 @@
 import React, { useReducer, useEffect, useMemo } from 'react';
-import * as R from 'ramda';
 import type { Reducer } from 'react';
 import { Flex, Box, Text } from 'rebass/styled-components';
 import styled from 'styled-components';
@@ -81,7 +80,7 @@ const ConverterMain = ({
 }: Props) => {
   const [convert] = useMutation(CONVERT);
   const [state, dispatch] = useReducer<Reducer<State, ConverterActions>>(converterReducer, {
-    baseCur: 'EUR', // inital values could go form localstorage
+    baseCur: 'EUR', // inital values could go form localstorage, value should ideally be from 'currencies' to prevent breaking api change
     targetCur: 'CZK',
     baseAmount: '0',
     targetAmount: '0',
@@ -97,16 +96,23 @@ const ConverterMain = ({
     async function updateData() {
       const parsedAmount = parseFloat(baseAmount);
       if (parsedAmount) {
-        convert({ variables: { baseCur, targetCur, amount: parsedAmount } })
-          .then(({ data }) => {
-            if (data?.conversion?.result) {
-              dispatch(setTargetAmount(String(data.conversion.result)));
-            }
-          })
-          .catch((err) => {
-            dispatch(setError(String(err)));
-          });
+        if (baseCur === targetCur) {
+          // avoid unneded api call
+          dispatch(setTargetAmount(baseAmount));
+        } else {
+          convert({ variables: { baseCur, targetCur, amount: parsedAmount } })
+            .then(({ data }) => {
+              if (data?.conversion?.result) {
+                dispatch(setTargetAmount(String(data.conversion.result)));
+              }
+            })
+            .catch((err) => {
+              dispatch(setError(String(err)));
+            });
+          // as improvement stats could refetch after mutation
+        }
       } else if (parsedAmount === 0) {
+        // avoid unneded api call
         dispatch(setTargetAmount('0'));
       }
     }
