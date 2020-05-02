@@ -31,6 +31,7 @@ module.exports = (env, argv) => ({
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: JSON.stringify(argv.mode),
+        API_URL: JSON.stringify(process.env.API_URL), // FIXME
       },
     }),
   ],

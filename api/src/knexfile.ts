@@ -1,7 +1,7 @@
 module.exports = {
   development: {
     client: 'pg',
-    connection: process.env.DB_URL || 'postgres://admin:admin@localhost:5432/main',
+    connection: process.env.DB_URL || 'postgres://admin:admin@localhost:5432/converter',
     migrations: {
       directory: './data/migrations',
     },
