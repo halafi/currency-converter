@@ -35,6 +35,9 @@ export const themeDefault = {
   colors: {
     text: '#000000',
     primary: '#000000',
+    white: '#fff',
+    gray: '#dfe1e5',
+    gray2: '#70757a',
     secondary: '#399CFC',
     error: '#d74245',
   },
