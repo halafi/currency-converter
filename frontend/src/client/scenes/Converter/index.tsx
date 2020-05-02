@@ -10,6 +10,11 @@ import ConverterMain from './components/ConverterMain';
 const CURRENCIES_QUERY = gql`
   {
     currencies
+    stats {
+      mostPopularTargetCurrency
+      totalAmountConvertedInUsd
+      conversionCount
+    }
   }
 `;
 
@@ -32,10 +37,15 @@ const Converter = () => {
       <Styled.Pane p={3} m={3}>
         {!error ? (
           <>
-            {loading || !data.currencies ? (
+            {loading ? (
               <Spinner />
             ) : (
-              <ConverterMain currencies={data.currencies} />
+              <ConverterMain
+                currencies={data.currencies}
+                mostPopularTargetCurrency={data.stats.mostPopularTargetCurrency}
+                totalAmountConvertedInUsd={data.stats.totalAmountConvertedInUsd}
+                conversionCount={data.stats.conversionCount}
+              />
             )}
           </>
         ) : (

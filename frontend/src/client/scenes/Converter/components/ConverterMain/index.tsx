@@ -1,7 +1,29 @@
-import React, { useReducer } from 'react';
+import React, { useReducer, useEffect, useMemo } from 'react';
+import * as R from 'ramda';
 import type { Reducer } from 'react';
 import { Flex, Box, Text } from 'rebass/styled-components';
 import styled from 'styled-components';
+import { gql } from 'apollo-boost';
+import { useMutation } from '@apollo/react-hooks';
+import Price from '../../../../components/Price';
+import converterReducer, {
+  setBaseAmount,
+  setTargetAmount,
+  setBaseCurrency,
+  setTargetCurrency,
+  setError,
+} from './services/reducer';
+import type { State, ConverterActions } from './services/reducer';
+import useDebounce from '../../../../hooks/useDebounce';
+
+const CONVERT = gql`
+  mutation convert($baseCur: String!, $targetCur: String!, $amount: Float!) {
+    conversion(baseCur: $baseCur, targetCur: $targetCur, amount: $amount) {
+      rate
+      result
+    }
+  }
+`;
 
 const Styled = {
   Pane: styled(Box)`
@@ -46,83 +68,60 @@ const Styled = {
 
 type Props = {
   currencies: string[];
+  mostPopularTargetCurrency: string;
+  totalAmountConvertedInUsd: number;
+  conversionCount: number;
 };
 
-type State = {
-  baseCur: string;
-  targetCur: string;
-  baseAmount: string;
-  targetAmount: string;
-};
-
-const SET_BASE_CURRENCY = 'SET_BASE_CURRENCY';
-const SET_TARGET_CURRENCY = 'SET_TARGET_CURRENCY';
-const SET_BASE_AMOUNT = 'SET_BASE_AMOUNT';
-const SET_TARGET_AMOUNT = 'SET_TARGET_AMOUNT';
-
-type SetBaseCurrencyAction = {
-  type: typeof SET_BASE_CURRENCY;
-  payload: {
-    baseCur: string;
-  };
-};
-
-type SetTargetCurrencyAction = {
-  type: typeof SET_TARGET_CURRENCY;
-  payload: {
-    targetCur: string;
-  };
-};
-
-type SetBaseAmount = {
-  type: typeof SET_BASE_AMOUNT;
-  payload: {
-    baseAmount: string;
-  };
-};
-type SetTargetAmount = {
-  type: typeof SET_TARGET_AMOUNT;
-  payload: {
-    targetAmount: string;
-  };
-};
-
-type ConverterActions =
-  | SetBaseCurrencyAction
-  | SetTargetCurrencyAction
-  | SetBaseAmount
-  | SetTargetAmount;
-
-const converterReducer = (oldState: State, action: ConverterActions): State => {
-  switch (action.type) {
-    case SET_BASE_CURRENCY:
-      return { ...oldState, baseCur: action.payload.baseCur };
-    case SET_TARGET_CURRENCY:
-      return { ...oldState, targetCur: action.payload.targetCur };
-    case SET_BASE_AMOUNT:
-      return { ...oldState, baseAmount: action.payload.baseAmount };
-    case SET_TARGET_AMOUNT:
-      return { ...oldState, targetAmount: action.payload.targetAmount };
-    default:
-      throw new Error();
-  }
-};
-
-const ConverterMain = ({ currencies }: Props) => {
+const ConverterMain = ({
+  currencies,
+  mostPopularTargetCurrency,
+  totalAmountConvertedInUsd,
+  conversionCount,
+}: Props) => {
+  const [convert] = useMutation(CONVERT);
   const [state, dispatch] = useReducer<Reducer<State, ConverterActions>>(converterReducer, {
-    baseCur: 'eur',
-    targetCur: 'eur',
+    baseCur: 'EUR', // inital values could go form localstorage
+    targetCur: 'CZK',
     baseAmount: '0',
     targetAmount: '0',
+    error: '',
   });
 
-  const { baseCur, targetCur, baseAmount, targetAmount } = state;
+  const { baseCur, targetCur, baseAmount, targetAmount, error } = state;
 
-  const options = currencies.map((cur) => (
-    <option key={cur} value={cur}>
-      {cur}
-    </option>
-  ));
+  // has a drawback but avoids tons of requsts in current approach
+  const debouncedBaseAmount = useDebounce(baseAmount, 250);
+
+  useEffect(() => {
+    async function updateData() {
+      const parsedAmount = parseFloat(baseAmount);
+      if (parsedAmount) {
+        convert({ variables: { baseCur, targetCur, amount: parsedAmount } })
+          .then(({ data }) => {
+            if (data?.conversion?.result) {
+              dispatch(setTargetAmount(String(data.conversion.result)));
+            }
+          })
+          .catch((err) => {
+            dispatch(setError(String(err)));
+          });
+      } else if (parsedAmount === 0) {
+        dispatch(setTargetAmount('0'));
+      }
+    }
+    updateData();
+  }, [baseCur, targetCur, debouncedBaseAmount]);
+
+  const options = useMemo(
+    () =>
+      currencies.map((cur) => (
+        <option key={cur} value={cur}>
+          {cur}
+        </option>
+      )),
+    [currencies],
+  );
 
   return (
     <>
@@ -130,41 +129,32 @@ const ConverterMain = ({ currencies }: Props) => {
         <Styled.Input
           type="number"
           value={baseAmount}
-          onChange={(e) =>
-            dispatch({
-              type: SET_BASE_AMOUNT,
-              payload: { baseAmount: e.target.value },
-            })
-          }
+          onChange={(e) => dispatch(setBaseAmount(e.target.value))}
         />
-        <Styled.Select
-          value={baseCur}
-          onChange={(e) =>
-            dispatch({ type: SET_BASE_CURRENCY, payload: { baseCur: e.target.value } })
-          }
-        >
+        <Styled.Select value={baseCur} onChange={(e) => dispatch(setBaseCurrency(e.target.value))}>
           {options}
         </Styled.Select>
       </Flex>
       <Flex my={2}>
-        <Styled.Input
-          type="number"
-          value={targetAmount}
-          onChange={(e) =>
-            dispatch({
-              type: SET_TARGET_AMOUNT,
-              payload: { targetAmount: e.target.value },
-            })
-          }
-        />
+        <Styled.Input type="number" value={targetAmount} disabled />
         <Styled.Select
           value={targetCur}
-          onChange={(e) =>
-            dispatch({ type: SET_TARGET_CURRENCY, payload: { targetCur: e.target.value } })
-          }
+          onChange={(e) => dispatch(setTargetCurrency(e.target.value))}
         >
           {options}
         </Styled.Select>
+      </Flex>
+      {error && <Text color="error">{error}</Text>}
+      <Flex flexDirection="column" my={3}>
+        <Text lineHeight={1.6} fontSize={1}>
+          Most popular currency: {mostPopularTargetCurrency.toUpperCase()}
+        </Text>
+        <Text lineHeight={1.6} fontSize={1}>
+          Total Converted: <Price cur="usd" value={totalAmountConvertedInUsd} />
+        </Text>
+        <Text lineHeight={1.6} fontSize={1}>
+          Total Conversions: {conversionCount}
+        </Text>
       </Flex>
       <Box mt={3}>
         <Styled.Disclaimer

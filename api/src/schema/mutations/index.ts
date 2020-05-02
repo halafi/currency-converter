@@ -1,10 +1,4 @@
-import {
-  GraphQLObjectType,
-  GraphQLString,
-  GraphQLNonNull,
-  GraphQLInt,
-  GraphQLFloat,
-} from 'graphql';
+import { GraphQLObjectType, GraphQLString, GraphQLNonNull, GraphQLFloat } from 'graphql';
 
 const ConversionPayloadType = new GraphQLObjectType({
   name: 'ConversionPayload',
@@ -27,7 +21,7 @@ const rootMutation = new GraphQLObjectType({
       args: {
         baseCur: { type: GraphQLNonNull(GraphQLString) },
         targetCur: { type: GraphQLNonNull(GraphQLString) },
-        amount: { type: GraphQLNonNull(GraphQLInt) },
+        amount: { type: GraphQLNonNull(GraphQLFloat) },
       },
       resolve: async (_, args, ctx) => {
         const newConversionRecord = await ctx.convert(args.baseCur, args.targetCur, args.amount);
